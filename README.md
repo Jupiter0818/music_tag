@@ -1,4 +1,4 @@
-# SonicTag Studio 🎵
+# MusicTag Studio 🎵
 
 一个轻量、优雅的本地音频标签与歌词自动匹配写入工具。基于 FastAPI、Mutagen 构建，配合 Apple 质感的现代磨砂毛玻璃 Web 界面。
 
