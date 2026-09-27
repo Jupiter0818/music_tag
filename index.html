@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>MusicTag Studio</title>
+  <style>
+    /* Apple 调色盘与自适应变量系统 */
+    :root {
+      --bg: #ececf0;
+      --window-bg: rgba(255, 255, 255, 0.82);
+      --card-bg: rgba(255, 255, 255, 0.65);
+      --panel-bg: rgba(246, 246, 248, 0.7);
+      --border: rgba(0, 0, 0, 0.08);
+      --border-focus: rgba(0, 0, 0, 0.22);
+      --text: #1d1d1f;
+      --text-sub: #86868b;
+      --accent: #fc3c44; /* Apple Music 经典红 */
+      --accent-hover: #e0242c;
+      --accent-soft: rgba(252, 60, 68, 0.08);
+      --input-bg: rgba(255, 255, 255, 0.9);
+      --shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.04);
+      --item-hover: rgba(0, 0, 0, 0.04);
+      --item-active: rgba(252, 60, 68, 0.08);
+    }
+
+    /* 自动识别系统/浏览器深色模式 (Dark Mode) */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #121214;
+        --window-bg: rgba(28, 28, 30, 0.85);
+        --card-bg: rgba(44, 44, 46, 0.6);
+        --panel-bg: rgba(36, 36, 38, 0.65);
+        --border: rgba(255, 255, 255, 0.08);
+        --border-focus: rgba(255, 255, 255, 0.28);
+        --text: #f5f5f7;
+        --text-sub: #a1a1a6;
+        --accent: #fa2d48;
+        --accent-hover: #fb5165;
+        --accent-soft: rgba(250, 45, 72, 0.15);
+        --input-bg: rgba(20, 20, 22, 0.75);
+        --shadow: 0 24px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        --item-hover: rgba(255, 255, 255, 0.06);
+        --item-active: rgba(250, 45, 72, 0.16);
+      }
+    }
+
+    /* 手动强制深色 */
+    :root[data-theme="dark"] {
+      --bg: #121214;
+      --window-bg: rgba(28, 28, 30, 0.85);
+      --card-bg: rgba(44, 44, 46, 0.6);
+      --panel-bg: rgba(36, 36, 38, 0.65);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(255, 255, 255, 0.28);
+      --text: #f5f5f7;
+      --text-sub: #a1a1a6;
+      --accent: #fa2d48;
+      --accent-hover: #fb5165;
+      --accent-soft: rgba(250, 45, 72, 0.15);
+      --input-bg: rgba(20, 20, 22, 0.75);
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      --item-hover: rgba(255, 255, 255, 0.06);
+      --item-active: rgba(250, 45, 72, 0.16);
+    }
+
+    /* 手动强制浅色 */
+    :root[data-theme="light"] {
+      --bg: #ececf0;
+      --window-bg: rgba(255, 255, 255, 0.82);
+      --card-bg: rgba(255, 255, 255, 0.65);
+      --panel-bg: rgba(246, 246, 248, 0.7);
+      --border: rgba(0, 0, 0, 0.08);
+      --border-focus: rgba(0, 0, 0, 0.22);
+      --text: #1d1d1f;
+      --text-sub: #86868b;
+      --accent: #fc3c44;
+      --accent-hover: #e0242c;
+      --accent-soft: rgba(252, 60, 68, 0.08);
+      --input-bg: rgba(255, 255, 255, 0.9);
+      --shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.04);
+      --item-hover: rgba(0, 0, 0, 0.04);
+      --item-active: rgba(252, 60, 68, 0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "PingFang SC", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+    
+    body {
+      background: var(--bg);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      overflow: hidden;
+      transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 类似 macOS 原生 App 容器（严格限高与限宽，杜绝超出页面） */
+    .app-window {
+      width: 95vw;
+      max-width: 1240px;
+      height: 92vh;
+      max-height: 860px;
+      background: var(--window-bg);
+      backdrop-filter: blur(35px) saturate(190%);
+      -webkit-backdrop-filter: blur(35px) saturate(190%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 顶部原生 Titlebar */
+    .titlebar {
+      height: 52px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .traffic-lights { display: flex; gap: 8px; align-items: center; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-close { background: #ff5f57; }
+    .dot-min { background: #febc2e; }
+    .dot-max { background: #28c840; }
+    .app-title { font-size: 13px; font-weight: 600; color: var(--text); margin-left: 12px; letter-spacing: -0.2px; }
+
+    .titlebar-actions { display: flex; align-items: center; gap: 10px; }
+    
+    /* Apple 风格按钮与分段控制器 */
+    .theme-toggle, .lang-select {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
+      transition: 0.15s;
+    }
+    .theme-toggle:hover, .lang-select:hover { border-color: var(--border-focus); }
+
+    .btn-apple {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.15s ease;
+      box-shadow: 0 2px 8px var(--accent-soft);
+    }
+    .btn-apple:hover { background: var(--accent-hover); }
+    .btn-apple:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* 快捷功能偏好设置栏 */
+    .pref-strip {
+      padding: 8px 20px;
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-sub);
+      flex-shrink: 0;
+    }
+    .pref-group { display: flex; align-items: center; gap: 16px; }
+    .pref-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .pref-item input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
+
+    /* 工作区分割布局（Split-view） */
+    .workbench {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      min-height: 0; /* 极其关键：防止子容器内容挤爆溢出 */
+      overflow: hidden;
+    }
+
+    /* 左侧侧边栏 Sidebar */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      background: var(--panel-bg);
+      min-height: 0;
+    }
+    .sidebar-head {
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .file-tree {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 8px 12px 8px;
+      min-height: 0;
+    }
+    .file-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      transition: 0.15s;
+    }
+    .file-cell:hover { background: var(--item-hover); }
+    .file-cell.active { background: var(--item-active); }
+    .cell-cover { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: var(--border); flex-shrink: 0; }
+    .cell-info { flex: 1; min-width: 0; }
+    .cell-title { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cell-sub { font-size: 11px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+
+    .drop-dock {
+      margin: 8px 12px 12px 12px;
+      padding: 12px;
+      border: 1.5px dashed var(--border-focus);
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--text-sub);
+      transition: 0.15s;
+      flex-shrink: 0;
+    }
+    .drop-dock:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+    /* 右侧主工作区 Canvas */
+    .canvas {
+      display: flex;
+      flex-direction: column;
+      padding: 18px 24px;
+      min-height: 0;
+      overflow: hidden;
+      gap: 12px;
+    }
+
+    /* 顶栏微调搜索 */
+    .search-row { display: flex; gap: 8px; flex-shrink: 0; }
+    .apple-input {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      outline: none;
+      transition: 0.15s;
+    }
+    .apple-input:focus { border-color: var(--accent); }
+    .search-input { flex: 1; }
+
+    /* 紧凑候选版本卡片横滚区 (Carousel) */
+    .candidates-bar {
+      flex-shrink: 0;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+    .candidate-pill {
+      flex: 0 0 170px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
+      cursor: pointer;
+      transition: 0.15s;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .candidate-pill:hover { border-color: var(--border-focus); transform: translateY(-1px); }
+    .candidate-pill.active { border-color: var(--accent); background: var(--accent-soft); }
+    .pill-img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: #000; flex-shrink: 0; }
+    .pill-info { flex: 1; min-width: 0; }
+    .pill-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+    .pill-sub { font-size: 10px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* 详情表单紧凑排版 */
+    .form-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    .cover-view {
+      width: 110px;
+      height: 110px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: var(--panel-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+    .cover-view img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .meta-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
+    }
+    .field-item { display: flex; flex-direction: column; gap: 3px; }
+    .field-item label { font-size: 10px; font-weight: 600; color: var(--text-sub); }
+
+    /* 自适应歌词区域（填满底部，绝不超高） */
+    .lyrics-dock {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      margin-top: 4px;
+    }
+    .lyrics-dock label { font-size: 10px; font-weight: 600; color: var(--text-sub); margin-bottom: 4px; }
+    .lyrics-dock textarea {
+      flex: 1;
+      width: 100%;
+      resize: none;
+      font-family: -apple-system-monospaced, Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      padding: 10px 12px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-window">
+  <!-- 顶部 macOS Titlebar -->
+  <div class="titlebar">
+    <div class="traffic-lights">
+      <div class="dot dot-close"></div>
+      <div class="dot dot-min"></div>
+      <div class="dot dot-max"></div>
+      <span class="app-title" id="i18n-appTitle">MusicTag Studio</span>
+    </div>
+
+    <div class="titlebar-actions">
+      <!-- 浅色/深色模式手动切换（默认跟随系统） -->
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌓 自动</button>
+
+      <!-- 语言 -->
+      <select class="lang-select" id="uiLang" onchange="changeLanguage(this.value)">
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+      </select>
+
+      <button class="btn-apple" id="saveBtn" onclick="submitBatch()" disabled>一键导出</button>
+    </div>
+  </div>
+
+  <!-- 选项 Preference 条 -->
+  <div class="pref-strip">
+    <div class="pref-group">
+      <label class="pref-item">
+        <input type="checkbox" id="chkExportLrc" checked>
+        <span id="i18n-lrcSync">同步导出独立 .lrc 歌词</span>
+      </label>
+      <label class="pref-item">
+        <input type="checkbox" id="chkSaveLocal" checked onchange="toggleSaveMode()">
+        <span id="i18n-directSave">直接保存到本地</span>
+      </label>
+    </div>
+
+    <div class="pref-group" id="localGroup">
+      <span style="max-width: 220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="displayFolder">未设定目标目录</span>
+      <button class="theme-toggle" onclick="chooseFolder()" id="i18n-chooseBtn">浏览...</button>
+      <label class="pref-item">
+        <input type="checkbox" id="chkAlwaysAsk">
+        <span id="i18n-ask">每次询问</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 分栏工作区 -->
+  <div class="workbench">
+    <!-- 左侧列表 -->
+    <div class="sidebar">
+      <div class="sidebar-head">
+        <span id="i18n-queueHeader">待处理队列</span>
+        <span id="queueCount">0</span>
+      </div>
+
+      <div class="file-tree" id="fileList">
+        <div style="padding: 40px 16px; text-align: center; color: var(--text-sub); font-size: 11px;" id="i18n-emptyTip">
+          拖入音频文件开始处理
+        </div>
+      </div>
+
+      <div class="drop-dock" onclick="document.getElementById('fileInput').click()" id="i18n-dockTip">
+        + 点击或拖拽音频文件到此处
+      </div>
+      <input type="file" id="fileInput" accept=".flac,.mp3" multiple style="display: none">
+    </div>
+
+    <!-- 右侧画板 -->
+    <div class="canvas" id="canvas" style="opacity: 0.3; pointer-events: none;">
+      <!-- 搜索与匹配 -->
+      <div class="search-row">
+        <input type="text" class="apple-input search-input" id="manualQuery" placeholder="输入歌名/歌手手动纠正搜索...">
+        <button class="theme-toggle" onclick="manualReSearch()" id="i18n-searchBtn">搜索</button>
+      </div>
+
+      <!-- 智能多候选版本横滚 (已自动聚合美区与国区) -->
+      <div class="candidates-bar" id="candidatesList"></div>
+
+      <!-- 字段表单 -->
+      <div class="form-row">
+        <div class="cover-view" id="detailCover">无封面</div>
+        <div class="meta-fields">
+          <div class="field-item">
+            <label id="i18n-lblTitle">标题 (TITLE)</label>
+            <input type="text" class="apple-input" id="fieldTitle" oninput="updateCurrentMeta()">
+          </div>
+          <div class="field-item">
+            <label id="i18n-lblArtist">艺术家 (ARTIST)</label>
+            <input type="text" class="apple-input" id="fieldArtist" oninput="updateCurrentMeta()">
+          </div>
+          <div class="field-item">
+            <label id="i18n-lblAlbum">专辑 (ALBUM)</label>
+            <input type="text" class="apple-input" id="fieldAlbum" oninput="updateCurrentMeta()">
+          </div>
+          <div class="field-item">
+            <label id="i18n-lblGenre">流派 (GENRE)</label>
+            <input type="text" class="apple-input" id="fieldGenre" oninput="updateCurrentMeta()">
+          </div>
+        </div>
+      </div>
+
+      <!-- LRC 歌词 -->
+      <div class="lyrics-dock">
+        <label id="i18n-lblLyrics">LRC 滚动歌词</label>
+        <textarea class="apple-input" id="fieldLyrics" oninput="updateCurrentMeta()"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const I18N = {
+    zh: {
+      appTitle: "MusicTag Studio",
+      lrcSync: "同步导出独立 .lrc 歌词",
+      directSave: "直接保存到本地",
+      chooseBtn: "浏览...",
+      ask: "每次询问",
+      queueHeader: "待处理队列",
+      emptyTip: "拖入音频文件开始处理",
+      dockTip: "+ 点击或拖拽音频文件到此处",
+      searchBtn: "搜索",
+      lblTitle: "标题 (TITLE)",
+      lblArtist: "艺术家 (ARTIST)",
+      lblAlbum: "专辑 (ALBUM)",
+      lblGenre: "流派 (GENRE)",
+      lblLyrics: "LRC 滚动歌词",
+      saveBtn: "一键导出",
+      alertNoFolder: "未选定保存文件夹！",
+      doneAlert: "打标完成，已保存至目标目录。"
+    },
+    en: {
+      appTitle: "MusicTag Studio",
+      lrcSync: "Export standalone .lrc file",
+      directSave: "Save to local directory",
+      chooseBtn: "Browse...",
+      ask: "Always ask",
+      queueHeader: "Audio Queue",
+      emptyTip: "Drop audio files here to begin",
+      dockTip: "+ Click or drop files here",
+      searchBtn: "Search",
+      lblTitle: "Title",
+      lblArtist: "Artist",
+      lblAlbum: "Album",
+      lblGenre: "Genre",
+      lblLyrics: "Synced Lyrics (LRC)",
+      saveBtn: "Export All",
+      alertNoFolder: "Please select a destination folder!",
+      doneAlert: "Done! Exported to target folder."
+    },
+    ja: {
+      appTitle: "MusicTag Studio",
+      lrcSync: "独立した .lrc 歌詞を出力",
+      directSave: "ローカルに直接保存",
+      chooseBtn: "参照...",
+      ask: "毎回確認",
+      queueHeader: "処理待ちキュー",
+      emptyTip: "ファイルをドラッグして開始",
+      dockTip: "+ ファイルを追加",
+      searchBtn: "検索",
+      lblTitle: "曲名",
+      lblArtist: "アーティスト",
+      lblAlbum: "アルバム",
+      lblGenre: "ジャンル",
+      lblLyrics: "LRC 同期歌詞",
+      saveBtn: "一括書き出し",
+      alertNoFolder: "保存先を選択してください！",
+      doneAlert: "完了しました。指定フォルダに保存されました。"
+    }
+  };
+
+  let currentLang = 'zh';
+  let queue = [];
+  let currentIndex = -1;
+  let savedLocalFolder = localStorage.getItem('musictag_save_dir') || '';
+
+  // 主题切换（系统跟随 / 浅色 / 深色）
+  function toggleTheme() {
+    const root = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    const cur = root.getAttribute('data-theme');
+    if (!cur) {
+      root.setAttribute('data-theme', 'light');
+      btn.innerText = "☀️ 浅色";
+    } else if (cur === 'light') {
+      root.setAttribute('data-theme', 'dark');
+      btn.innerText = "🌙 深色";
+    } else {
+      root.removeAttribute('data-theme');
+      btn.innerText = "🌓 自动";
+    }
+  }
+
+  function changeLanguage(lang) {
+    currentLang = lang;
+    const t = I18N[lang];
+    for (let k in t) {
+      const el = document.getElementById(`i18n-${k}`);
+      if (el) el.innerText = t[k];
+    }
+    document.getElementById('saveBtn').innerText = t.saveBtn;
+    renderList();
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    if (savedLocalFolder) {
+      document.getElementById('displayFolder').innerText = savedLocalFolder;
+      document.getElementById('displayFolder').title = savedLocalFolder;
+    }
+    document.getElementById('chkAlwaysAsk').checked = localStorage.getItem('musictag_ask') === 'true';
+  });
+
+  document.getElementById('chkAlwaysAsk').addEventListener('change', (e) => {
+    localStorage.setItem('musictag_ask', e.target.checked);
+  });
+
+  function toggleSaveMode() {
+    const isLocal = document.getElementById('chkSaveLocal').checked;
+    document.getElementById('localGroup').style.display = isLocal ? 'flex' : 'none';
+  }
+
+  async function chooseFolder() {
+    const res = await fetch('/api/select-folder');
+    const data = await res.json();
+    if (data.folder) {
+      savedLocalFolder = data.folder;
+      localStorage.setItem('musictag_save_dir', data.folder);
+      document.getElementById('displayFolder').innerText = data.folder;
+      return data.folder;
+    }
+    return '';
+  }
+
+  // 拖拽上传
+  const fileInput = document.getElementById('fileInput');
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) handleFiles(e.target.files);
+  });
+
+  function handleFiles(files) {
+    const valid = Array.from(files).filter(f => f.name.endsWith('.flac') || f.name.endsWith('.mp3'));
+    if (valid.length === 0) return alert("请导入 FLAC 或 MP3 文件！");
+
+    valid.forEach(f => {
+      queue.push({
+        file: f,
+        filename: f.name,
+        cleanName: f.name.replace(/\.[^/.]+$/, "").replace(/[_\-\.]/g, " "),
+        status: 'pending',
+        candidates: [],
+        meta: { title: '', artist: '', album: '', genre: '', lyrics: '', cover_url: '' }
+      });
+    });
+
+    renderList();
+    autoProcessQueue();
+  }
+
+  function renderList() {
+    const listEl = document.getElementById('fileList');
+    document.getElementById('queueCount').innerText = queue.length;
+    document.getElementById('saveBtn').disabled = queue.length === 0;
+
+    if (queue.length === 0) {
+      listEl.innerHTML = `<div style="padding: 40px 16px; text-align: center; color: var(--text-sub); font-size: 11px;">${I18N[currentLang].emptyTip}</div>`;
+      return;
+    }
+
+    listEl.innerHTML = queue.map((item, idx) => `
+      <div class="file-cell ${idx === currentIndex ? 'active' : ''}" onclick="selectItem(${idx})">
+        <img class="cell-cover" src="${item.meta.cover_url || ''}">
+        <div class="cell-info">
+          <div class="cell-title">${item.filename}</div>
+          <div class="cell-sub">${item.meta.title ? `${item.meta.title} ·${item.meta.artist}` : (item.status === 'searching' ? '匹配中...' : '未匹配')}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function autoProcessQueue() {
+    for (let i = 0; i < queue.length; i++) {
+      if (queue[i].status === 'pending') {
+        queue[i].status = 'searching';
+        renderList();
+        await matchSingle(queue[i]);
+        queue[i].status = queue[i].meta.title ? 'done' : 'fail';
+        renderList();
+        if (currentIndex === -1) selectItem(0);
+      }
+    }
+  }
+
+  // 智能调用聚合检索
+  async function matchSingle(item) {
+    try {
+      const res = await fetch(`/api/search?query=${encodeURIComponent(item.cleanName)}`);
+      const data = await res.json();
+      item.candidates = data.items || [];
+      if (item.candidates.length > 0) {
+        applyCandidate(item, item.candidates[0]);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function applyCandidate(item, candidate) {
+    item.meta.title = candidate.title;
+    item.meta.artist = candidate.artist;
+    item.meta.album = candidate.album;
+    item.meta.genre = candidate.genre;
+    item.meta.cover_url = candidate.cover_url;
+    item.selectedId = candidate.id;
+
+    fetch(`/api/lyrics?track=${encodeURIComponent(candidate.title)}&artist=${encodeURIComponent(candidate.artist)}&duration=${candidate.duration}`)
+      .then(res => res.json())
+      .then(d => {
+        item.meta.lyrics = d.lyrics || "";
+        if (queue[currentIndex] === item) {
+          document.getElementById('fieldLyrics').value = item.meta.lyrics;
+        }
+      });
+  }
+
+  function selectItem(idx) {
+    currentIndex = idx;
+    renderList();
+    const item = queue[idx];
+    const canvas = document.getElementById('canvas');
+    canvas.style.opacity = '1';
+    canvas.style.pointerEvents = 'auto';
+
+    document.getElementById('manualQuery').value = item.cleanName;
+    document.getElementById('fieldTitle').value = item.meta.title || "";
+    document.getElementById('fieldArtist').value = item.meta.artist || "";
+    document.getElementById('fieldAlbum').value = item.meta.album || "";
+    document.getElementById('fieldGenre').value = item.meta.genre || "";
+    document.getElementById('fieldLyrics').value = item.meta.lyrics || "";
+
+    const coverView = document.getElementById('detailCover');
+    coverView.innerHTML = item.meta.cover_url ? `<img src="${item.meta.cover_url}">` : "无封面";
+
+    renderCandidatePills(item);
+  }
+
+  function renderCandidatePills(item) {
+    const list = document.getElementById('candidatesList');
+    if (!item.candidates || item.candidates.length === 0) {
+      list.innerHTML = `<div style="font-size:11px; color:var(--text-sub); padding: 4px;">未搜索到候选版本</div>`;
+      return;
+    }
+    list.innerHTML = item.candidates.map(c => `
+      <div class="candidate-pill ${item.selectedId === c.id ? 'active' : ''}" onclick="pickCandidate('${c.id}')">
+        <img class="pill-img" src="${c.cover_url}">
+        <div class="pill-info">
+          <div class="pill-name" title="${c.title}">${c.title}</div>
+          <div class="pill-sub">${c.artist} · ${c.year || ''}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function pickCandidate(cid) {
+    if (currentIndex === -1) return;
+    const item = queue[currentIndex];
+    const found = item.candidates.find(c => c.id === cid);
+    if (!found) return;
+    applyCandidate(item, found);
+    selectItem(currentIndex);
+    item.status = 'done';
+    renderList();
+  }
+
+  function updateCurrentMeta() {
+    if (currentIndex === -1) return;
+    const item = queue[currentIndex];
+    item.meta.title = document.getElementById('fieldTitle').value;
+    item.meta.artist = document.getElementById('fieldArtist').value;
+    item.meta.album = document.getElementById('fieldAlbum').value;
+    item.meta.genre = document.getElementById('fieldGenre').value;
+    item.meta.lyrics = document.getElementById('fieldLyrics').value;
+    item.status = item.meta.title ? 'done' : 'fail';
+    renderList();
+  }
+
+  async function manualReSearch() {
+    if (currentIndex === -1) return;
+    const q = document.getElementById('manualQuery').value.trim();
+    if (!q) return;
+    queue[currentIndex].cleanName = q;
+    queue[currentIndex].status = 'searching';
+    renderList();
+    await matchSingle(queue[currentIndex]);
+    queue[currentIndex].status = queue[currentIndex].meta.title ? 'done' : 'fail';
+    selectItem(currentIndex);
+  }
+
+  async function submitBatch() {
+    const isSaveLocal = document.getElementById('chkSaveLocal').checked;
+    const exportLrc = document.getElementById('chkExportLrc').checked;
+    const alwaysAsk = document.getElementById('chkAlwaysAsk').checked;
+    const t = I18N[currentLang];
+
+    let targetDir = savedLocalFolder;
+    if (isSaveLocal) {
+      if (!targetDir || alwaysAsk) {
+        targetDir = await chooseFolder();
+        if (!targetDir) return alert(t.alertNoFolder);
+      }
+    }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+
+    try {
+      const formData = new FormData();
+      queue.forEach(i => formData.append("files", i.file));
+      formData.append("metadata_json", JSON.stringify(queue.map(i => i.meta)));
+      formData.append("export_lrc", exportLrc);
+      formData.append("save_to_local", isSaveLocal);
+      formData.append("target_folder", targetDir);
+
+      const res = await fetch("/api/batch-process", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Batch Failed");
+
+      if (isSaveLocal) {
+        alert(`${t.doneAlert}\n\n${targetDir}`);
+      } else {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `SonicTag_${Date.now()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    } catch (e) {
+      alert("处理失败，请检查命令行输出。");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>
